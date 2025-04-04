@@ -14,6 +14,7 @@ export type Player = {
   isHost?: boolean;
   cards: Card[];
   isCurrentTurn: boolean;
+  isComputer?: boolean;
 };
 
 export type GameAction = {
@@ -35,4 +36,5 @@ export interface GameState {
   gameStarted: boolean;
   gameEnded: boolean;
   winner: string | null;
+  computerPlayers: string[];
 }

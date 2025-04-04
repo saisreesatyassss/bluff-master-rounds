@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { Card, CardRank, GameState, Player, GameAction } from '@/types/game';
-import { initializeGameState, advanceTurn, checkWinCondition } from '@/lib/gameUtils';
+import { initializeGameState, advanceTurn, checkWinCondition, getRandomCards, getRandomCardRank } from '@/lib/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
 
 type GameContextType = {
   state: GameState;
   addPlayer: (name: string) => void;
+  addComputerPlayer: () => void;
   startGame: () => void;
   playCards: (cards: Card[], claimedRank: CardRank, playerId: string) => void;
   passTurn: (playerId: string) => void;
@@ -23,11 +24,13 @@ const initialState: GameState = {
   actionHistory: [],
   gameStarted: false,
   gameEnded: false,
-  winner: null
+  winner: null,
+  computerPlayers: []
 };
 
 type GameActionReducer = 
   | { type: 'ADD_PLAYER'; payload: { name: string } }
+  | { type: 'ADD_COMPUTER_PLAYER' }
   | { type: 'START_GAME' }
   | { type: 'PLAY_CARDS'; payload: { cards: Card[]; claimedRank: CardRank; playerId: string } }
   | { type: 'PASS_TURN'; payload: { playerId: string } }
@@ -50,12 +53,34 @@ function gameReducer(state: GameState, action: GameActionReducer): GameState {
         name,
         isHost: isFirstPlayer,
         cards: [],
-        isCurrentTurn: false
+        isCurrentTurn: false,
+        isComputer: false
       };
       
       return {
         ...state,
         players: [...state.players, newPlayer]
+      };
+    }
+    
+    case 'ADD_COMPUTER_PLAYER': {
+      if (state.gameStarted) return state;
+      
+      const aiPlayerNum = state.players.filter(p => p.name.startsWith("Computer")).length + 1;
+      const aiName = `Computer ${aiPlayerNum}`;
+      
+      const newComputerPlayer: Player = {
+        id: `computer-${Date.now()}`,
+        name: aiName,
+        cards: [],
+        isCurrentTurn: false,
+        isComputer: true
+      };
+      
+      return {
+        ...state,
+        players: [...state.players, newComputerPlayer],
+        computerPlayers: [...state.computerPlayers, newComputerPlayer.id]
       };
     }
 
@@ -200,7 +225,8 @@ function gameReducer(state: GameState, action: GameActionReducer): GameState {
           ...p,
           cards: [],
           isCurrentTurn: false
-        }))
+        })),
+        computerPlayers: state.computerPlayers
       };
     
     case 'SET_STATE':
@@ -215,6 +241,34 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (!state.gameStarted || state.gameEnded) return;
+    
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (currentPlayer && currentPlayer.isComputer) {
+      const timer = setTimeout(() => {
+        handleComputerTurn(currentPlayer);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [state.currentPlayerIndex, state.gameStarted, state.gameEnded]);
+  
+  const handleComputerTurn = (computerPlayer: Player) => {
+    if (state.playedCards.length === 0 || !state.claimedRank) {
+      const cardsToPlay = getRandomCards(computerPlayer.cards, Math.min(3, computerPlayer.cards.length));
+      const claimRank = getRandomCardRank();
+      
+      playCards(cardsToPlay, claimRank, computerPlayer.id);
+    } else {
+      if (Math.random() < 0.3) {
+        challengeClaim(computerPlayer.id);
+      } else {
+        passTurn(computerPlayer.id);
+      }
+    }
+  };
+
   const addPlayer = (name: string) => {
     if (state.gameStarted) {
       toast({
@@ -225,6 +279,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
     dispatch({ type: 'ADD_PLAYER', payload: { name } });
+  };
+  
+  const addComputerPlayer = () => {
+    if (state.gameStarted) {
+      toast({
+        title: "Game already started",
+        description: "Cannot add computer players once the game has started",
+        variant: "destructive"
+      });
+      return;
+    }
+    dispatch({ type: 'ADD_COMPUTER_PLAYER' });
   };
 
   const startGame = () => {
@@ -263,6 +329,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{ 
         state, 
         addPlayer, 
+        addComputerPlayer,
         startGame, 
         playCards, 
         passTurn, 

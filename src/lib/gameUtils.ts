@@ -65,7 +65,8 @@ export function initializeGameState(players: Player[]): GameState {
     actionHistory: [],
     gameStarted: true,
     gameEnded: false,
-    winner: null
+    winner: null,
+    computerPlayers: players.filter(p => p.isComputer).map(p => p.id)
   };
 }
 
@@ -101,4 +102,15 @@ export function advanceTurn(gameState: GameState): GameState {
     currentPlayerIndex: nextPlayerIndex,
     players: updatedPlayers
   };
+}
+
+// Helper functions for computer player AI
+export function getRandomCards(cards: Card[], count: number): Card[] {
+  // Shuffle the cards and pick the first 'count' cards
+  return shuffleDeck([...cards]).slice(0, count);
+}
+
+export function getRandomCardRank(): CardRank {
+  const ranks: CardRank[] = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+  return ranks[Math.floor(Math.random() * ranks.length)];
 }

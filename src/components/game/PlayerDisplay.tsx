@@ -3,7 +3,7 @@ import React from 'react';
 import { Player } from '@/types/game';
 import { cn } from '@/lib/utils';
 import PlayingCard from './PlayingCard';
-import { User } from 'lucide-react';
+import { User, Cpu } from 'lucide-react';
 
 interface PlayerDisplayProps {
   player: Player;
@@ -29,7 +29,11 @@ const PlayerDisplay: React.FC<PlayerDisplayProps> = ({
           "w-8 h-8 rounded-full flex items-center justify-center",
           isCurrentPlayer ? "bg-game-accent" : "bg-gray-500"
         )}>
-          <User size={16} className="text-white" />
+          {player.isComputer ? (
+            <Cpu size={16} className="text-white" />
+          ) : (
+            <User size={16} className="text-white" />
+          )}
         </div>
         <div className="font-medium text-white">
           {player.name}
@@ -70,6 +74,7 @@ const PlayerDisplay: React.FC<PlayerDisplayProps> = ({
 
       <div className="text-sm text-gray-300">
         {player.cards.length} card{player.cards.length !== 1 ? 's' : ''}
+        {player.isComputer && <span className="ml-1 text-blue-400">(AI)</span>}
       </div>
       
       {isCurrentPlayer && <div className="mt-1 text-game-accent text-sm">Current Turn</div>}

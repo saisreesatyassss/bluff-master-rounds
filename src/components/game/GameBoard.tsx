@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useGame } from '@/contexts/GameContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,13 +10,25 @@ import PlayerDisplay from './PlayerDisplay';
 import { Card as CardType, CardRank } from '@/types/game';
 import { AlertCircle, Trophy } from 'lucide-react';
 
-const GameBoard: React.FC = () => {
+interface GameBoardProps {
+  selfPlayerId?: string;
+  isMultiplayer: boolean;
+}
+
+const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = false }) => {
   const { state, playCards, passTurn, challengeClaim, resetGame } = useGame();
   const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
   const [claimedRank, setClaimedRank] = useState<CardRank>('A');
   
   const currentPlayer = state.players[state.currentPlayerIndex];
-  const selfPlayer = state.players[0]; // For demo purposes, first player is "you"
+  const selfPlayer = selfPlayerId 
+    ? state.players.find(p => p.id === selfPlayerId) 
+    : state.players.find(p => !p.isComputer); // Default to first human player
+  
+  if (!selfPlayer) {
+    return <div>Error: No human player found</div>;
+  }
+  
   const isSelfTurn = currentPlayer.id === selfPlayer.id;
   
   const handleCardSelect = (card: CardType) => {
@@ -88,6 +101,7 @@ const GameBoard: React.FC = () => {
             </CardTitle>
             <CardDescription className="text-center text-lg">
               {winner?.name} has won the game!
+              {winner?.isComputer && " (Computer)"}
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -209,7 +223,10 @@ const GameBoard: React.FC = () => {
                         const player = state.players.find(p => p.id === action.player);
                         return (
                           <li key={i} className="text-sm text-gray-300">
-                            <strong className="text-white">{player?.name}</strong>
+                            <strong className="text-white">
+                              {player?.name}
+                              {player?.isComputer ? " (AI)" : ""}
+                            </strong>
                             {action.action === 'claim' 
                               ? ` claimed ${action.claimedCount} ${action.claimedRank}${action.claimedCount !== 1 ? 's' : ''}`
                               : action.action === 'pass' 
@@ -228,7 +245,7 @@ const GameBoard: React.FC = () => {
         {/* Player's hand and controls */}
         <div className="mt-4 bg-black/30 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-white text-lg font-medium">Your Hand</h2>
+            <h2 className="text-white text-lg font-medium">Your Hand ({selfPlayer.name})</h2>
             {isSelfTurn && (
               <div className="bg-game-accent text-black px-3 py-1 rounded-full text-sm font-medium">
                 Your Turn!

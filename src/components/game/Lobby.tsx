@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useGame } from '@/contexts/GameContext';
-import { Users } from 'lucide-react';
+import { Users, Cpu } from 'lucide-react';
 
 const Lobby = () => {
   const [playerName, setPlayerName] = useState('');
-  const { state, addPlayer, startGame } = useGame();
+  const { state, addPlayer, addComputerPlayer, startGame } = useGame();
   
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +41,17 @@ const Lobby = () => {
             />
             <Button type="submit">Add</Button>
           </form>
+          
+          <div className="flex justify-center mb-6">
+            <Button 
+              onClick={addComputerPlayer}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Cpu size={16} />
+              Add Computer Player
+            </Button>
+          </div>
 
           <div className="space-y-1">
             <h3 className="font-medium">Players ({state.players.length}):</h3>
@@ -50,7 +61,14 @@ const Lobby = () => {
               <ul className="border rounded-md divide-y">
                 {state.players.map((player) => (
                   <li key={player.id} className="flex items-center justify-between p-2">
-                    <span>{player.name}</span>
+                    <div className="flex items-center gap-2">
+                      {player.isComputer ? (
+                        <Cpu size={16} className="text-blue-500" />
+                      ) : (
+                        <Users size={16} />
+                      )}
+                      <span>{player.name}</span>
+                    </div>
                     {player.isHost && <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">Host</span>}
                   </li>
                 ))}

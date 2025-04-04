@@ -7,7 +7,12 @@ import GameBoard from '@/components/game/GameBoard';
 // This wrapper component accesses the game context
 const GameWrapper = () => {
   const { state } = useGame();
-  return state.gameStarted ? <GameBoard /> : <Lobby />;
+  
+  // Select the first human player as "you"
+  const humanPlayerId = state.players.find(p => !p.isComputer)?.id;
+  const isMultiplayer = state.players.filter(p => !p.isComputer).length > 1;
+  
+  return state.gameStarted ? <GameBoard selfPlayerId={humanPlayerId} isMultiplayer={isMultiplayer} /> : <Lobby />;
 };
 
 // This component provides the context
