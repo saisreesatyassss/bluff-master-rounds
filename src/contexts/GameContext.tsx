@@ -26,7 +26,7 @@ const initialState: GameState = {
   winner: null
 };
 
-type GameAction = 
+type GameActionReducer = 
   | { type: 'ADD_PLAYER'; payload: { name: string } }
   | { type: 'START_GAME' }
   | { type: 'PLAY_CARDS'; payload: { cards: Card[]; claimedRank: CardRank; playerId: string } }
@@ -37,11 +37,10 @@ type GameAction =
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+function gameReducer(state: GameState, action: GameActionReducer): GameState {
   switch (action.type) {
     case 'ADD_PLAYER': {
       const { name } = action.payload;
-      // Don't allow new players if game already started
       if (state.gameStarted) return state;
       
       const isFirstPlayer = state.players.length === 0;
@@ -69,14 +68,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const { cards, claimedRank, playerId } = action.payload;
       const playerIndex = state.players.findIndex(p => p.id === playerId);
       
-      // Check if it's player's turn
       if (playerIndex !== state.currentPlayerIndex) return state;
       
-      // Update player's hand by removing played cards
       const updatedPlayers = [...state.players];
       const player = { ...updatedPlayers[playerIndex] };
       
-      // Remove played cards from player's hand
       const playedCardIds = new Set(cards.map(c => c.id));
       player.cards = player.cards.filter(c => !playedCardIds.has(c.id));
       updatedPlayers[playerIndex] = player;
@@ -106,7 +102,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const { playerId } = action.payload;
       const playerIndex = state.players.findIndex(p => p.id === playerId);
       
-      // Can't pass if it's your turn or no cards have been played
       if (playerIndex === state.currentPlayerIndex || state.playedCards.length === 0) {
         return state;
       }
@@ -117,7 +112,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         timestamp: Date.now()
       };
       
-      // Check if all other players passed
       const allPassed = state.players
         .filter((p, i) => i !== state.currentPlayerIndex)
         .every(p => {
@@ -128,8 +122,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         });
       
       if (allPassed) {
-        // All players have passed, current player wins the round
-        // Clear played cards, advance turn
         return advanceTurn({
           ...state,
           playedCards: [],
@@ -159,7 +151,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         timestamp: Date.now()
       };
       
-      // Check if the last player was honest
       const wasHonest = state.playedCards.every(card => card.rank === state.claimedRank);
       
       let updatedPlayers = [...state.players];
@@ -167,24 +158,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const currentPlayerIndex = state.currentPlayerIndex;
       
       if (wasHonest) {
-        // Challenger was wrong, they get all the cards
         const challenger = { ...updatedPlayers[challengerIndex] };
         challenger.cards = [...challenger.cards, ...state.playedCards];
         updatedPlayers[challengerIndex] = challenger;
       } else {
-        // Current player was caught lying, they get all the cards
         const currentPlayer = { ...updatedPlayers[currentPlayerIndex] };
         currentPlayer.cards = [...currentPlayer.cards, ...state.playedCards];
         updatedPlayers[currentPlayerIndex] = currentPlayer;
       }
       
-      // Advance turn to either challenger (if they were right) or next player
       let nextIndex = currentPlayerIndex;
       if (!wasHonest) {
-        // Current player lied, challenger gets next turn
         nextIndex = challengerIndex;
       } else {
-        // Current player was honest, go to next player
         nextIndex = (currentPlayerIndex + 1) % state.players.length;
       }
       
@@ -210,7 +196,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET_GAME':
       return {
         ...initialState,
-        // Keep the players but reset their cards
         players: state.players.map(p => ({
           ...p,
           cards: [],

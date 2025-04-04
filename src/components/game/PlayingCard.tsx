@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card as CardType } from '@/types/game';
 import { cn } from '@/lib/utils';
@@ -10,6 +9,7 @@ interface PlayingCardProps {
   onClick?: () => void;
   selected?: boolean;
   small?: boolean;
+  style?: React.CSSProperties;
 }
 
 const PlayingCard: React.FC<PlayingCardProps> = ({ 
@@ -18,7 +18,8 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   className, 
   onClick,
   selected = false,
-  small = false
+  small = false,
+  style
 }) => {
   const isRed = card?.suit === 'hearts' || card?.suit === 'diamonds';
   const suitSymbol = {
@@ -36,6 +37,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
           small ? "w-8 h-12" : "w-16 h-24",
           className
         )}
+        style={style}
       >
         <span className="text-gray-400">?</span>
       </div>
@@ -54,6 +56,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
       style={{ 
         perspective: '1000px', 
         transformStyle: 'preserve-3d',
+        ...style
       }}
     >
       {!faceDown ? (
