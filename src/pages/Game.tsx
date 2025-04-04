@@ -12,8 +12,10 @@ const GameWrapper = () => {
   const humanPlayers = state.players.filter(p => !p.isComputer);
   const isMultiplayer = humanPlayers.length > 1;
   
+  // In multiplayer mode with local play, we don't specify the selfPlayerId so that
+  // the game board will show the active player's hand when it's their turn
   return state.gameStarted 
-    ? <GameBoard selfPlayerId={isMultiplayer ? null : humanPlayers[0]?.id} isMultiplayer={isMultiplayer} /> 
+    ? <GameBoard isMultiplayer={isMultiplayer} /> 
     : <Lobby />;
 };
 

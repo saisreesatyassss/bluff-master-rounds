@@ -22,7 +22,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
   
   const currentPlayer = state.players[state.currentPlayerIndex];
   
-  // In multiplayer, we show all players' hands to the respective active player
+  // In multiplayer, we show the current player's hand
   // In single player, we show only the human player's hand
   const activeSelfPlayer = isMultiplayer 
     ? currentPlayer.isComputer ? null : currentPlayer // Only human players in multiplayer
@@ -306,7 +306,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
           </div>
         )}
         
-        {(!activeSelfPlayer || isMultiplayer) && (
+        {(!activeSelfPlayer || (isMultiplayer && currentPlayer.isComputer)) && (
           <div className="mt-4 bg-black/30 p-4 rounded-lg">
             <div className="text-white text-center">
               {isMultiplayer 
@@ -326,9 +326,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
             </summary>
             <div className="mt-2 text-sm text-gray-300 space-y-2">
               <p>1. On your turn, select cards and make a claim about them (truth or bluff).</p>
-              <p>2. Other players can pass or challenge your claim.</p>
-              <p>3. If you're caught bluffing, you take all the cards as penalty.</p>
-              <p>4. If someone challenges and you were telling the truth, the challenger takes all cards.</p>
+              <p>2. When it's not your turn, you can pass or challenge the current player's claim.</p>
+              <p>3. If you challenge and the player was bluffing, they take all cards as a penalty.</p>
+              <p>4. If you challenge and the player was honest, YOU take all cards.</p>
               <p>5. First player to discard all cards wins!</p>
             </div>
           </details>

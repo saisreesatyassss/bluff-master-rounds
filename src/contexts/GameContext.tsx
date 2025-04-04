@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { Card, CardRank, GameState, Player } from '@/types/game';
+import { Card, CardRank, GameState, Player, GameAction as GameActionType } from '@/types/game';
 import { initializeGameState, advanceTurn, checkWinCondition, getRandomCards, getRandomCardRank } from '@/lib/gameUtils';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -30,7 +30,7 @@ const initialState: GameState = {
 };
 
 // Rename to avoid conflict with type imported from game.ts
-type GameActionReducer = 
+type GameReducerAction = 
   | { type: 'ADD_PLAYER'; payload: { name: string } }
   | { type: 'ADD_COMPUTER_PLAYER' }
   | { type: 'START_GAME' }
@@ -42,7 +42,7 @@ type GameActionReducer =
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-function gameReducer(state: GameState, action: GameActionReducer): GameState {
+function gameReducer(state: GameState, action: GameReducerAction): GameState {
   switch (action.type) {
     case 'ADD_PLAYER': {
       const { name } = action.payload;
@@ -104,9 +104,9 @@ function gameReducer(state: GameState, action: GameActionReducer): GameState {
       player.cards = player.cards.filter(c => !playedCardIds.has(c.id));
       updatedPlayers[playerIndex] = player;
       
-      const newGameAction = {
+      const newGameAction: GameActionType = {
         player: playerId,
-        action: 'claim' as const,
+        action: 'claim',
         timestamp: Date.now(),
         claimedRank,
         claimedCount: cards.length
@@ -134,9 +134,9 @@ function gameReducer(state: GameState, action: GameActionReducer): GameState {
         return state;
       }
       
-      const newGameAction = {
+      const newGameAction: GameActionType = {
         player: playerId,
-        action: 'pass' as const,
+        action: 'pass',
         timestamp: Date.now()
       };
       
@@ -180,9 +180,9 @@ function gameReducer(state: GameState, action: GameActionReducer): GameState {
         return state;
       }
       
-      const newGameAction = {
+      const newGameAction: GameActionType = {
         player: challengerId,
-        action: 'challenge' as const,
+        action: 'challenge',
         timestamp: Date.now()
       };
       
