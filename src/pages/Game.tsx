@@ -8,11 +8,13 @@ import GameBoard from '@/components/game/GameBoard';
 const GameWrapper = () => {
   const { state } = useGame();
   
-  // Select the first human player as "you"
-  const humanPlayerId = state.players.find(p => !p.isComputer)?.id;
-  const isMultiplayer = state.players.filter(p => !p.isComputer).length > 1;
+  // Find all human players
+  const humanPlayers = state.players.filter(p => !p.isComputer);
+  const isMultiplayer = humanPlayers.length > 1;
   
-  return state.gameStarted ? <GameBoard selfPlayerId={humanPlayerId} isMultiplayer={isMultiplayer} /> : <Lobby />;
+  return state.gameStarted 
+    ? <GameBoard selfPlayerId={isMultiplayer ? null : humanPlayers[0]?.id} isMultiplayer={isMultiplayer} /> 
+    : <Lobby />;
 };
 
 // This component provides the context
