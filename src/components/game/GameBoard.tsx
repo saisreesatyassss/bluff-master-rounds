@@ -258,7 +258,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-white text-lg font-medium">Your Hand ({activeSelfPlayer.name})</h2>
               {currentPlayer.id === activeSelfPlayer.id && (
-                <div className="bg-game-accent text-black px-3 py-1 rounded-full text-sm font-medium">
+                <div className="bg-game-accent text-black px-3 py-1 rounded-full text-sm font-medium animate-pulse">
                   Your Turn!
                 </div>
               )}
@@ -311,9 +311,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
             <div className="text-white text-center">
               {isMultiplayer 
                 ? currentPlayer.isComputer 
-                  ? `Computer player ${currentPlayer.name} is thinking...` 
+                  ? <span className="animate-pulse flex justify-center items-center">Computer player {currentPlayer.name} is thinking...</span>
                   : `Waiting for ${currentPlayer.name} to play...`
-                : "Waiting for AI players..."}
+                : <span className="animate-pulse flex justify-center items-center">Waiting for AI players...</span>}
             </div>
           </div>
         )}
