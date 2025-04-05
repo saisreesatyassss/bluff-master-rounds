@@ -64,12 +64,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				game: {
-					'bg': '#2D1B40',
-					'table': '#1E5128',
-					'accent': '#FFD700',
+					'bg': '#1A0E2A',
+					'table': '#271035',
+					'accent': '#8b5cf6',
 					'card': '#FFFFFF',
-					'error': '#FF4040',
-					'success': '#40B040'
+					'error': '#ef4444',
+					'success': '#22c55e',
+					'gold': '#f59e0b'
 				}
 			},
 			borderRadius: {
@@ -107,13 +108,27 @@ export default {
 				'card-flip': {
 					'0%': { transform: 'rotateY(0deg)' },
 					'100%': { transform: 'rotateY(180deg)' }
+				},
+				'pulse-glow': {
+					'0%, 100%': { 
+						'box-shadow': '0 0 5px 2px rgba(139, 92, 246, 0.7)'
+					},
+					'50%': { 
+						'box-shadow': '0 0 15px 5px rgba(139, 92, 246, 0.9)'
+					},
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'card-deal': 'card-deal 0.3s ease-out',
-				'card-flip': 'card-flip 0.5s ease-out'
+				'card-flip': 'card-flip 0.5s ease-out',
+				'pulse-glow': 'pulse-glow 2s infinite',
+				'float': 'float 3s ease-in-out infinite'
 			}
 		}
 	},

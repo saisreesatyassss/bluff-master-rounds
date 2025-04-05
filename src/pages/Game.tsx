@@ -22,7 +22,7 @@ const GameWrapper = () => {
 const Game = () => {
   return (
     <GameProvider>
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-game-bg">
+      <div className="min-h-screen balatro-bg overflow-hidden">
         <GameWrapper />
       </div>
     </GameProvider>
