@@ -258,6 +258,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [state.currentPlayerIndex, state.gameStarted, state.gameEnded]);
   
   const handleComputerTurn = (computerPlayer: Player) => {
+    console.log("Computer turn triggered:", computerPlayer.name);
+    
     if (state.playedCards.length === 0 || !state.claimedRank) {
       const cardsByRank: Record<CardRank, Card[]> = {} as Record<CardRank, Card[]>;
       
@@ -282,25 +284,34 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let claimRank: CardRank;
       
       if (bestRank && maxCount >= 2 && Math.random() < 0.7) {
-        cardsToPlay = cardsByRank[bestRank].slice(0, Math.min(3, maxCount));
+        const numToPlay = Math.min(3, maxCount);
+        cardsToPlay = cardsByRank[bestRank].slice(0, numToPlay);
         claimRank = bestRank;
+        console.log(`Computer playing honestly: ${numToPlay} ${bestRank}s`);
       } else {
         const numCardsToPlay = Math.min(Math.floor(Math.random() * 3) + 1, computerPlayer.cards.length);
         cardsToPlay = getRandomCards(computerPlayer.cards, numCardsToPlay);
         
         if (Math.random() < 0.4 && cardsToPlay.length > 0) {
           claimRank = cardsToPlay[0].rank;
+          console.log(`Computer semi-honest: claiming ${cardsToPlay.length} ${claimRank}s`);
         } else {
           claimRank = getRandomCardRank();
+          console.log(`Computer bluffing: claiming ${cardsToPlay.length} ${claimRank}s`);
         }
       }
       
-      playCards(cardsToPlay, claimRank, computerPlayer.id);
-      
-      toast({
-        title: `${computerPlayer.name} played ${cardsToPlay.length} card(s)`,
-        description: `${computerPlayer.name} claims to have played ${cardsToPlay.length} ${claimRank}${cardsToPlay.length !== 1 ? 's' : ''}`,
-      });
+      if (cardsToPlay.length > 0) {
+        console.log(`Computer ${computerPlayer.name} playing ${cardsToPlay.length} cards claiming ${claimRank}`);
+        playCards(cardsToPlay, claimRank, computerPlayer.id);
+        
+        toast({
+          title: `${computerPlayer.name} played ${cardsToPlay.length} card(s)`,
+          description: `${computerPlayer.name} claims to have played ${cardsToPlay.length} ${claimRank}${cardsToPlay.length !== 1 ? 's' : ''}`,
+        });
+      } else {
+        console.error("Computer has no cards to play!");
+      }
     } else {
       const challengeThreshold = Math.min(0.3 + (state.claimedCount * 0.1), 0.7);
       
