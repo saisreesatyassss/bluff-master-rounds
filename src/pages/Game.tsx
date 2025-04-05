@@ -22,7 +22,9 @@ const GameWrapper = () => {
 const Game = () => {
   return (
     <GameProvider>
-      <GameWrapper />
+      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-game-bg">
+        <GameWrapper />
+      </div>
     </GameProvider>
   );
 };

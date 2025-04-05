@@ -136,17 +136,20 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
         timestamp: Date.now()
       };
       
-      const playerIndex = state.players.findIndex(p => p.id === playerId);
-      
+      // Check if all other players have passed
       const allOthersHavePassed = state.players
         .filter((p, i) => i !== state.currentPlayerIndex)
         .every(p => {
+          // This player is currently passing, so count them
           if (p.id === playerId) return true;
+          
+          // Check if this player already passed in the current round
           return state.actionHistory
-            .filter(a => a.action === 'pass' && a.player === p.id)
-            .some(a => true);
+            .filter(a => a.action === 'pass')
+            .some(a => a.player === p.id);
         });
       
+      // If all others have passed, advance to next round with empty pile
       if (allOthersHavePassed) {
         return advanceTurn({
           ...state,
@@ -158,6 +161,7 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
         });
       }
       
+      // Otherwise just record the pass action
       return {
         ...state,
         lastAction: newGameAction,
@@ -244,6 +248,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { toast } = useToast();
 
+  // This effect triggers computer player turns
   useEffect(() => {
     if (!state.gameStarted || state.gameEnded) return;
     
@@ -260,9 +265,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const handleComputerTurn = (computerPlayer: Player) => {
     console.log("Computer turn triggered:", computerPlayer.name);
     
+    // Computer is making an initial play
     if (state.playedCards.length === 0 || !state.claimedRank) {
       const cardsByRank: Record<CardRank, Card[]> = {} as Record<CardRank, Card[]>;
       
+      // Group cards by rank
       computerPlayer.cards.forEach(card => {
         if (!cardsByRank[card.rank]) {
           cardsByRank[card.rank] = [];
@@ -270,6 +277,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cardsByRank[card.rank].push(card);
       });
       
+      // Find rank with most cards
       let bestRank: CardRank | null = null;
       let maxCount = 0;
       
@@ -283,19 +291,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       let cardsToPlay: Card[] = [];
       let claimRank: CardRank;
       
+      // Strategy: Play honestly if we have multiple cards of same rank
       if (bestRank && maxCount >= 2 && Math.random() < 0.7) {
         const numToPlay = Math.min(3, maxCount);
         cardsToPlay = cardsByRank[bestRank].slice(0, numToPlay);
         claimRank = bestRank;
         console.log(`Computer playing honestly: ${numToPlay} ${bestRank}s`);
-      } else {
+      } 
+      // Otherwise bluff or semi-bluff
+      else {
         const numCardsToPlay = Math.min(Math.floor(Math.random() * 3) + 1, computerPlayer.cards.length);
         cardsToPlay = getRandomCards(computerPlayer.cards, numCardsToPlay);
         
+        // Semi-honest (claim same as one of the cards)
         if (Math.random() < 0.4 && cardsToPlay.length > 0) {
           claimRank = cardsToPlay[0].rank;
           console.log(`Computer semi-honest: claiming ${cardsToPlay.length} ${claimRank}s`);
-        } else {
+        } 
+        // Complete bluff
+        else {
           claimRank = getRandomCardRank();
           console.log(`Computer bluffing: claiming ${cardsToPlay.length} ${claimRank}s`);
         }
@@ -312,7 +326,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } else {
         console.error("Computer has no cards to play!");
       }
-    } else {
+    } 
+    // Computer must decide to challenge or pass
+    else {
+      // More cards claimed = higher chance of challenging
       const challengeThreshold = Math.min(0.3 + (state.claimedCount * 0.1), 0.7);
       
       if (Math.random() < challengeThreshold) {
