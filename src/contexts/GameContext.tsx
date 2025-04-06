@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { Card, CardRank, GameState, Player, GameAction as GameActionType } from '@/types/game';
 import { initializeGameState, advanceTurn, checkWinCondition, getRandomCards, getRandomCardRank } from '@/lib/gameUtils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type GameContextType = {
   state: GameState;
@@ -254,6 +255,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const currentPlayer = state.players[state.currentPlayerIndex];
     if (currentPlayer && currentPlayer.isComputer) {
+      // Add a delay to make it seem like the computer is thinking
       const timer = setTimeout(() => {
         handleComputerTurn(currentPlayer);
       }, 1500);
@@ -265,8 +267,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const handleComputerTurn = (computerPlayer: Player) => {
     console.log("Computer turn triggered:", computerPlayer.name);
     
-    // Computer is making an initial play
-    if (state.playedCards.length === 0 || !state.claimedRank) {
+    // If computer has no cards, skip turn (this shouldn't happen but just in case)
+    if (computerPlayer.cards.length === 0) {
+      console.error("Computer has no cards to play!");
+      return;
+    }
+    
+    // Computer is making an initial play or playing its turn
+    if (state.playedCards.length === 0 || state.claimedRank === null || state.currentPlayerIndex === state.players.findIndex(p => p.id === computerPlayer.id)) {
       const cardsByRank: Record<CardRank, Card[]> = {} as Record<CardRank, Card[]>;
       
       // Group cards by rank
@@ -323,11 +331,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           title: `${computerPlayer.name} played ${cardsToPlay.length} card(s)`,
           description: `${computerPlayer.name} claims to have played ${cardsToPlay.length} ${claimRank}${cardsToPlay.length !== 1 ? 's' : ''}`,
         });
-      } else {
-        console.error("Computer has no cards to play!");
       }
     } 
-    // Computer must decide to challenge or pass
+    // Computer must decide to challenge or pass on another player's claim
     else {
       // More cards claimed = higher chance of challenging
       const challengeThreshold = Math.min(0.3 + (state.claimedCount * 0.1), 0.7);

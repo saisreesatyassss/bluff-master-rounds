@@ -50,7 +50,7 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
       className={cn(
         "relative rounded-md cursor-pointer transition-all",
         small ? "w-8 h-12 text-xs" : "w-16 h-24",
-        selected && "transform -translate-y-2",
+        selected && "transform -translate-y-4",
         className
       )}
       onClick={onClick}
