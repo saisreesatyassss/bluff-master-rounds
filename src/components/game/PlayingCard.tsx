@@ -31,8 +31,6 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     if (onClick) onClick();
   };
 
@@ -61,14 +59,10 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
         className
       )}
       onClick={handleClick}
-      style={{ 
-        perspective: '1000px', 
-        transformStyle: 'preserve-3d',
-        ...style
-      }}
+      style={{...style}}
     >
       <div className={cn(
-        "absolute w-full h-full backface-visibility-hidden transition-all",
+        "absolute w-full h-full",
         faceDown ? "balatro-card-back" : "balatro-card",
         selected && "balatro-glow"
       )}>
