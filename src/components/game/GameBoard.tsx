@@ -21,6 +21,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
   const [claimedRank, setClaimedRank] = useState<CardRank>('A');
   
   const currentPlayer = state.players[state.currentPlayerIndex];
+  // Get the first human player as the default player in single-player mode
   const humanPlayer = state.players.find(p => !p.isComputer);
   
   // In single player mode, we always show the human player's hand
@@ -29,8 +30,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
     ? currentPlayer.isComputer ? null : currentPlayer 
     : humanPlayer;
   
+  // Check if it's the player's turn to act (either their turn or they can challenge)
+  const isPlayerTurn = activeSelfPlayer && currentPlayer.id === activeSelfPlayer.id;
+  const canChallenge = activeSelfPlayer && currentPlayer.id !== activeSelfPlayer.id && state.playedCards.length > 0;
+  
   const handleCardSelect = (card: CardType) => {
-    if (!activeSelfPlayer || (isMultiplayer && currentPlayer.id !== activeSelfPlayer.id)) return;
+    if (!activeSelfPlayer) return;
+    
+    // Only allow selecting cards on your turn
+    if (activeSelfPlayer.id !== currentPlayer.id) return;
     
     if (selectedCards.some(c => c.id === card.id)) {
       setSelectedCards(selectedCards.filter(c => c.id !== card.id));
@@ -40,7 +48,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
   };
   
   const handlePlayCards = () => {
-    if (!activeSelfPlayer) return;
+    if (!activeSelfPlayer || activeSelfPlayer.id !== currentPlayer.id) return;
     
     if (selectedCards.length === 0) {
       toast({
@@ -274,8 +282,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
                 )}
               </div>
               
-              {/* Action buttons for non-current player */}
-              {humanPlayer && currentPlayer.isComputer && state.playedCards.length > 0 && (
+              {/* Action buttons for when human can act but it's not their turn */}
+              {activeSelfPlayer && canChallenge && (
                 <div className="mt-4 balatro-panel p-4 border border-purple-600/20">
                   <p className="text-purple-200 mb-3 text-center">
                     <Computer className="inline h-5 w-5 mr-2 text-blue-300" />
@@ -333,13 +341,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ selfPlayerId, isMultiplayer = fal
                 </div>
                 
                 {/* Player actions */}
-                {currentPlayer.id === humanPlayer.id && (
+                {isPlayerTurn && (
                   <div className="flex flex-col sm:flex-row gap-3 items-center balatro-panel p-3 border border-purple-600/20">
                     <div className="flex gap-2 items-center">
                       <span className="text-purple-200">Claim as:</span>
-                      <Select onValueChange={(val) => setClaimedRank(val as CardRank)} defaultValue="A">
+                      <Select value={claimedRank} onValueChange={(val) => setClaimedRank(val as CardRank)}>
                         <SelectTrigger className="w-20 bg-purple-900/70 text-white border-purple-600/50">
-                          <SelectValue placeholder="Rank" />
+                          <SelectValue placeholder="Rank">{claimedRank}</SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-purple-900 text-white border-purple-600/50">
                           {['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'].map(rank => (

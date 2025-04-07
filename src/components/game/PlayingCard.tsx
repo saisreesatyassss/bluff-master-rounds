@@ -30,6 +30,12 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
     spades: '♠'
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onClick) onClick();
+  };
+
   if (!card) {
     return (
       <div 
@@ -48,12 +54,13 @@ const PlayingCard: React.FC<PlayingCardProps> = ({
   return (
     <div 
       className={cn(
-        "relative rounded-md cursor-pointer transition-all",
+        "relative rounded-md transition-all",
         small ? "w-8 h-12 text-xs" : "w-16 h-24",
         selected && "transform -translate-y-4",
+        onClick ? "cursor-pointer" : "",
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
       style={{ 
         perspective: '1000px', 
         transformStyle: 'preserve-3d',
