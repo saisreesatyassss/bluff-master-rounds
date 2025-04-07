@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { Card, CardRank, GameState, Player, GameAction as GameActionType } from '@/types/game';
 import { initializeGameState, advanceTurn, checkWinCondition, getRandomCards, getRandomCardRank } from '@/lib/gameUtils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type GameContextType = {
   state: GameState;
@@ -29,7 +29,6 @@ const initialState: GameState = {
   computerPlayers: []
 };
 
-// Rename to avoid conflict with type imported from game.ts
 type GameReducerAction = 
   | { type: 'ADD_PLAYER'; payload: { name: string } }
   | { type: 'ADD_COMPUTER_PLAYER' }
@@ -128,9 +127,7 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
     case 'PASS_TURN': {
       const { playerId } = action.payload;
       
-      // Check if this player is allowed to pass
-      const currentPlayer = state.players[state.currentPlayerIndex];
-      if (playerId === currentPlayer.id || state.playedCards.length === 0) {
+      if (playerId === state.players[state.currentPlayerIndex].id || state.playedCards.length === 0) {
         return state;
       }
       
@@ -140,23 +137,21 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
         timestamp: Date.now()
       };
       
-      const playerIndex = state.players.findIndex(p => p.id === playerId);
-      
-      // Check if all players have passed except the current player
+      // Check if all other players have passed
       const allOthersHavePassed = state.players
         .filter((p, i) => i !== state.currentPlayerIndex)
         .every(p => {
-          // This player has just passed
+          // This player is currently passing, so count them
           if (p.id === playerId) return true;
           
-          // Check if this player has already passed
+          // Check if this player already passed in the current round
           return state.actionHistory
-            .filter(a => a.action === 'pass' && a.player === p.id)
-            .some(a => true);
+            .filter(a => a.action === 'pass')
+            .some(a => a.player === p.id);
         });
       
+      // If all others have passed, advance to next round with empty pile
       if (allOthersHavePassed) {
-        // Everyone has passed, move to the next player
         return advanceTurn({
           ...state,
           playedCards: [],
@@ -167,6 +162,7 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
         });
       }
       
+      // Otherwise just record the pass action
       return {
         ...state,
         lastAction: newGameAction,
@@ -187,7 +183,7 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
       };
       
       const wasHonest = state.playedCards
-        .slice(-state.claimedCount) // Get the last N cards that were claimed
+        .slice(-state.claimedCount)
         .every(card => card.rank === state.claimedRank);
       
       let updatedPlayers = [...state.players];
@@ -195,24 +191,19 @@ function gameReducer(state: GameState, action: GameReducerAction): GameState {
       const currentPlayerIndex = state.currentPlayerIndex;
       
       if (wasHonest) {
-        // Current player was honest, challenger takes all cards
         const challenger = { ...updatedPlayers[challengerIndex] };
         challenger.cards = [...challenger.cards, ...state.playedCards];
         updatedPlayers[challengerIndex] = challenger;
       } else {
-        // Current player was bluffing, current player takes all cards
         const currentPlayer = { ...updatedPlayers[currentPlayerIndex] };
         currentPlayer.cards = [...currentPlayer.cards, ...state.playedCards];
         updatedPlayers[currentPlayerIndex] = currentPlayer;
       }
       
-      // Determine who gets the next turn
       let nextIndex = currentPlayerIndex;
       if (!wasHonest) {
-        // If current player was caught bluffing, challenger gets next turn
         nextIndex = challengerIndex;
       } else {
-        // If current player was honest, go to next player
         nextIndex = (currentPlayerIndex + 1) % state.players.length;
       }
       
@@ -258,12 +249,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { toast } = useToast();
 
-  // Computer player AI logic
+  // This effect triggers computer player turns
   useEffect(() => {
     if (!state.gameStarted || state.gameEnded) return;
     
     const currentPlayer = state.players[state.currentPlayerIndex];
     if (currentPlayer && currentPlayer.isComputer) {
+      // Add a delay to make it seem like the computer is thinking
       const timer = setTimeout(() => {
         handleComputerTurn(currentPlayer);
       }, 1500);
@@ -273,10 +265,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [state.currentPlayerIndex, state.gameStarted, state.gameEnded]);
   
   const handleComputerTurn = (computerPlayer: Player) => {
-    if (state.playedCards.length === 0 || !state.claimedRank) {
-      // AI's turn to play cards
-      
-      // Smart AI: Try to play cards of the same rank if possible
+    console.log("Computer turn triggered:", computerPlayer.name);
+    
+    // If computer has no cards, skip turn (this shouldn't happen but just in case)
+    if (computerPlayer.cards.length === 0) {
+      console.error("Computer has no cards to play!");
+      return;
+    }
+    
+    // Computer is making an initial play or playing its turn
+    if (state.playedCards.length === 0 || state.claimedRank === null || state.currentPlayerIndex === state.players.findIndex(p => p.id === computerPlayer.id)) {
       const cardsByRank: Record<CardRank, Card[]> = {} as Record<CardRank, Card[]>;
       
       // Group cards by rank
@@ -287,7 +285,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cardsByRank[card.rank].push(card);
       });
       
-      // Find the rank with the most cards
+      // Find rank with most cards
       let bestRank: CardRank | null = null;
       let maxCount = 0;
       
@@ -298,39 +296,60 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
       
-      // Decide what to play
       let cardsToPlay: Card[] = [];
       let claimRank: CardRank;
       
+      // Strategy: Play honestly if we have multiple cards of same rank
       if (bestRank && maxCount >= 2 && Math.random() < 0.7) {
-        // Play cards of the same rank and be honest (70% chance if we have 2+ of the same rank)
-        cardsToPlay = cardsByRank[bestRank].slice(0, Math.min(3, maxCount));
+        const numToPlay = Math.min(3, maxCount);
+        cardsToPlay = cardsByRank[bestRank].slice(0, numToPlay);
         claimRank = bestRank;
-      } else {
-        // Random play (either bluff or just play random cards)
+        console.log(`Computer playing honestly: ${numToPlay} ${bestRank}s`);
+      } 
+      // Otherwise bluff or semi-bluff
+      else {
         const numCardsToPlay = Math.min(Math.floor(Math.random() * 3) + 1, computerPlayer.cards.length);
         cardsToPlay = getRandomCards(computerPlayer.cards, numCardsToPlay);
         
-        // Sometimes be honest, sometimes bluff
+        // Semi-honest (claim same as one of the cards)
         if (Math.random() < 0.4 && cardsToPlay.length > 0) {
-          claimRank = cardsToPlay[0].rank; // Be honest about one card
-        } else {
-          claimRank = getRandomCardRank(); // Bluff
+          claimRank = cardsToPlay[0].rank;
+          console.log(`Computer semi-honest: claiming ${cardsToPlay.length} ${claimRank}s`);
+        } 
+        // Complete bluff
+        else {
+          claimRank = getRandomCardRank();
+          console.log(`Computer bluffing: claiming ${cardsToPlay.length} ${claimRank}s`);
         }
       }
       
-      playCards(cardsToPlay, claimRank, computerPlayer.id);
-      
-    } else {
-      // Respond to others' claims
-      
-      // Higher chance to challenge if the claimed count is high
+      if (cardsToPlay.length > 0) {
+        console.log(`Computer ${computerPlayer.name} playing ${cardsToPlay.length} cards claiming ${claimRank}`);
+        playCards(cardsToPlay, claimRank, computerPlayer.id);
+        
+        toast({
+          title: `${computerPlayer.name} played ${cardsToPlay.length} card(s)`,
+          description: `${computerPlayer.name} claims to have played ${cardsToPlay.length} ${claimRank}${cardsToPlay.length !== 1 ? 's' : ''}`,
+        });
+      }
+    } 
+    // Computer must decide to challenge or pass on another player's claim
+    else {
+      // More cards claimed = higher chance of challenging
       const challengeThreshold = Math.min(0.3 + (state.claimedCount * 0.1), 0.7);
       
       if (Math.random() < challengeThreshold) {
         challengeClaim(computerPlayer.id);
+        toast({
+          title: `${computerPlayer.name} challenged!`,
+          description: `${computerPlayer.name} doesn't believe the last claim`,
+        });
       } else {
         passTurn(computerPlayer.id);
+        toast({
+          title: `${computerPlayer.name} passed`,
+          description: `${computerPlayer.name} decided not to challenge`,
+        });
       }
     }
   };

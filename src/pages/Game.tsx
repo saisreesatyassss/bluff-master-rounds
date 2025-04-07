@@ -12,18 +12,28 @@ const GameWrapper = () => {
   const humanPlayers = state.players.filter(p => !p.isComputer);
   const isMultiplayer = humanPlayers.length > 1;
   
-  // In multiplayer mode with local play, we don't specify the selfPlayerId so that
-  // the game board will show the active player's hand when it's their turn
-  return state.gameStarted 
-    ? <GameBoard isMultiplayer={isMultiplayer} /> 
-    : <Lobby />;
+  return (
+    <div className="relative min-h-screen">
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute h-40 w-40 rounded-full bg-purple-500/20 blur-3xl top-20 left-20 animate-pulse"></div>
+        <div className="absolute h-60 w-60 rounded-full bg-violet-600/20 blur-3xl bottom-20 right-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+      </div>
+      <div className="relative z-10 min-h-screen">
+        {state.gameStarted 
+          ? <GameBoard isMultiplayer={isMultiplayer} /> 
+          : <Lobby />}
+      </div>
+    </div>
+  );
 };
 
 // This component provides the context
 const Game = () => {
   return (
     <GameProvider>
-      <GameWrapper />
+      <div className="min-h-screen balatro-bg overflow-hidden">
+        <GameWrapper />
+      </div>
     </GameProvider>
   );
 };
